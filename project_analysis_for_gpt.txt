@@ -1,0 +1,86 @@
+# PROJECT ANALYSIS: LOCAL SEARCH ENGINE (V2)
+
+## 1. Project Overview
+This project is a Hybrid AI-powered local file search engine designed for high-performance keyword and (planned) semantic search across local documents. It is currently in **Phase 1**, focusing on robust keyword-based search using an inverted index and BM25 ranking.
+
+### Tech Stack:
+- **Language:** Python 3
+- **UI Framework:** Tkinter (built-in, no external dependencies)
+- **Extraction Tools:** `pdfplumber` (PDF), `python-docx` (DOCX), standard library (TXT)
+- **Concurrency:** Threading for background indexing to keep UI responsive.
+
+---
+
+## 2. Architecture & Directory Structure
+The codebase follows a modular design with a clear split of responsibilities and a shared contract for data exchange.
+
+### Main Directory: `local_search_engine/`
+- `main.py`: Entry point for the desktop application.
+- `shared_types.py`: Defines the `ExtractedDocument` dataclass, which acts as the "contract" between the discovery/extractor modules and the indexer.
+- `scratch_pipeline.py`: A CLI-based script for quick end-to-end testing of the pipeline without the UI.
+
+### Modules:
+1.  **`discovery/`**: Responsible for finding files.
+    - `scanner.py`: Implements recursive directory walking with support for specific extensions (.pdf, .docx, .txt) and hidden-folder skipping.
+    - `monitor.py`: (Phase 2 Placeholder) Intended for real-time file system watching.
+2.  **`extractor/`**: Responsible for parsing files into raw text.
+    - `base_extractor.py`: Abstract base class defining the extraction interface.
+    - `pdf_extractor.py`, `docx_extractor.py`, `txt_extractor.py`: Specific implementations for each format.
+    - `__init__.py`: Provides a dispatcher `extract_file(path)` that routes to the correct extractor based on extension.
+3.  **`indexer/`**: The core search logic.
+    - `inverted_index.py`: Implements a full-text inverted index with BM25 (Best Matching 25) scoring. Handles tokenization, case-normalization, and snippet generation with context.
+    - `engine.py`: Orchestrator class (`SearchEngine`) that links scanning, extraction, and indexing. This is what the UI interacts with.
+4.  **`ui/`**: Desktop interface.
+    - `app.py`: Tkinter application with folder pickers, real-time progress bars during indexing, and a ranked results view with snippets.
+5.  **`tests/`**: Pytest suite for validating scanner, extractor, and indexer logic.
+
+---
+
+## 3. Data Contract (`shared_types.py`)
+Both "Member A" (Discovery/Extractor) and "Member B" (Indexer/UI) agree on this structure:
+```python
+@dataclass
+class ExtractedDocument:
+    file_path: str   # Absolute path
+    raw_text: str    # Clean UTF-8 text
+    chunks: List[str] # Overlapping fragments for indexing
+    metadata: dict   # title, author, page_count, modified_time, etc.
+```
+
+---
+
+## 4. Current Progress ("What has been done till now")
+
+### Phase 1: Keyword Search (COMPLETE)
+✅ **Recursive Discovery:** Fast directory scanning with hidden folder exclusion.
+✅ **Multi-format Extraction:** Reliable text extraction from PDF, Word, and Text files.
+✅ **Search Engine Core:**
+    - Inverted index implementation.
+    - BM25 ranking for high-quality relevance scoring.
+    - Dynamic snippet generation highlighting query terms.
+✅ **Desktop UI:**
+    - Background indexing (using `threading`) to prevent UI freezes.
+    - Progress visualization.
+    - Double-click to open files with system default application.
+✅ **Testing:** Unit tests cover directory scanning paths and extraction accuracy.
+
+---
+
+## 5. Upcoming Phase 2 (Planned)
+- **Semantic Search:** Integration of embeddings (e.g., Sentence-Transformers) for "meaning-based" search.
+- **OCR:** Adding `pytesseract` or similar to handle scanned PDF images.
+- **Real-time Monitoring:** Using `watchdog` to update the index automatically when files are added/modified.
+
+---
+
+## 6. Key Code Snippets for Context
+
+### Inverted Index Search Logic (`indexer/inverted_index.py` excerpt)
+The engine uses an inverted index where terms point to document IDs. BM25 scoring is calculated based on term frequency (TF), inverse document frequency (IDF), and document length normalization.
+
+### UI Progress Handling (`ui/app.py` excerpt)
+Uses `root.after()` to safely update Tkinter widgets from background threads during the `index_folder` operation.
+
+---
+
+**Summary for GPT:** This is a clean, modular Python codebase. The "contract" file `shared_types.py` is the most important bridge. Currently, it works as a fast, local "Everything" Search for documents.
