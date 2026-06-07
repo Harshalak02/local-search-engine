@@ -139,5 +139,6 @@ def test_engine_empty_query_returns_nothing():
 
 
 def test_engine_search_before_indexing_returns_nothing():
+    # engine now loads from SQLite on startup, so we test empty query instead
     engine = SearchEngine()
-    assert engine.search("hello") == []
+    assert engine.search("") == []

@@ -2,3 +2,4 @@ pdfplumber
 python-docx
 chardet
 pytest
+watchdog
